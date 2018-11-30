@@ -14,46 +14,46 @@ def main():
     exclude_sensors = ["airbeam"]
     use_wavelets = False
 
-    subject1_data, sensors = build_data(
-        "../temp/subject1_data.h5", 30, "subject1", 
+    subject2_data, sensors = build_data(
+        "../temp/subject2_data.h5", 30, "subject2", 
         use_wavelets, exclude_sensors=exclude_sensors, write_dists="train", 
         exclude_transitions=True)
 
-    subject2_data, _ = build_data(
-        "../temp/subject1_data.h5", 30, "subject2", 
+    subject3_data, _ = build_data(
+        "../temp/subject3_data.h5", 30, "subject3", 
         use_wavelets, exclude_sensors=exclude_sensors, 
         exclude_transitions=False)
 
     print "===============> BEFORE NORMALIZING <================="
 
     print "++++++++++++++++ subject1 ++++++++++++++++"
-    print subject1_data.mean()
-    print subject1_data.var()
-
-    print "++++++++++++++++ subject2 +++++++++++++++++"
     print subject2_data.mean()
     print subject2_data.var()
+
+    print "++++++++++++++++ subject2 +++++++++++++++++"
+    print subject3_data.mean()
+    print subject3_data.var()
     
-    mu, sigma = normalize_continuous_cols(subject1_data)
-    normalize_continuous_cols(subject2_data, mu, sigma)
+    mu, sigma = normalize_continuous_cols(subject2_data)
+    normalize_continuous_cols(subject3_data, mu, sigma)
   
     print "===============> AFTER NORMALIZING <================="
 
     print "++++++++++++++++ subject1 ++++++++++++++++"
-    print subject1_data.mean()
-    print subject1_data.var()
-
-    print "++++++++++++++++ subject2 +++++++++++++++++"
     print subject2_data.mean()
     print subject2_data.var()
 
-    subject1_data.describe().to_csv("../temp/subject1_stats.csv")
+    print "++++++++++++++++ subject2 +++++++++++++++++"
+    print subject3_data.mean()
+    print subject3_data.var()
+
     subject2_data.describe().to_csv("../temp/subject2_stats.csv")
+    subject3_data.describe().to_csv("../temp/subject3_stats.csv")
 
-    subject1_data.to_hdf("../temp/data_processed.h5", "subject1")
     subject2_data.to_hdf("../temp/data_processed.h5", "subject2")
+    subject3_data.to_hdf("../temp/data_processed.h5", "subject3")
 
-    return subject1_data, subject2_data, sensors
+    return subject2_data, subject3_data, sensors
 
 def build_data(path, window_size, subject, use_wavelets, 
                write_dists=None, exclude_sensors=None, 
@@ -63,7 +63,10 @@ def build_data(path, window_size, subject, use_wavelets,
     labels = pd.read_hdf(path, "labels")
     tv_plug = pd.read_hdf(path, "tv_plug")
     teapot_plug = pd.read_hdf(path, "teapot_plug")
-        
+
+
+    watch = watch.groupby(watch.index).mean()
+
     '''
     dining_room_motion = pd.read_hdf(path, "dining_room_motion")
     living_room_motion = pd.read_hdf(path, "living_room_motion")
@@ -85,13 +88,17 @@ def build_data(path, window_size, subject, use_wavelets,
     #     path, "living_room_motion").set_index("timestamp")
 
     watch_coarse = process_watch(watch, window_size, use_wavelets)
+
     labels_coarse = process_labels(watch, labels, window_size, exclude_transitions)
+ 
+
     tv_plug_coarse = coarsen_continuous_features(
         tv_plug["current"].to_frame(), watch, 3)
+
     teapot_plug_coarse = coarsen_continuous_features(
         teapot_plug["current"].to_frame(), watch, 3)
 
-
+   
     drawer1_coarse = process_binary_features(
         drawer1_contact, watch, "drawer1", window_size)
 
@@ -113,6 +120,7 @@ def build_data(path, window_size, subject, use_wavelets,
     fridge_coarse = process_binary_features(
         fridge_contact, watch, "fridge", window_size)
 
+
     all_sensors = collections.OrderedDict([
                     # kitchen
                    ("teapot_plug", teapot_plug_coarse), 
@@ -133,7 +141,7 @@ def build_data(path, window_size, subject, use_wavelets,
                    ("watch", watch_coarse),
 
                    ])
-
+ 
     exclude_sensors = [] if exclude_sensors is None else exclude_sensors
     all_data = labels_coarse
     for sensor in all_sensors:
@@ -145,7 +153,7 @@ def build_data(path, window_size, subject, use_wavelets,
             rsuffix = ""
         data = all_sensors[sensor]
         data.columns = map(lambda x: "{}_{}".format(sensor, x), data.columns)
-        all_data = all_data.join(data, rsuffix=rsuffix)
+        all_data = all_data.join(data, rsuffix=rsuffix).fillna(method="bfill").dropna()
 
         # also export means and variances for relevant features
         if write_dists is not None:
@@ -154,11 +162,11 @@ def build_data(path, window_size, subject, use_wavelets,
             save_path = "../output/{}_{}_distributions.csv"
             dists.to_csv(save_path.format(sensor, write_dists))
 
-    with open("../../temp/sensors.txt", "w") as fh:
+    with open("../temp/sensors.txt", "w") as fh:
         fh.write(str(all_sensors.keys()))
 
     return all_data, all_sensors.keys()
-
+	
 
 def flatten_multiindex(index):
     return ["{}_{}".format(x,y) for x,y in index.tolist()]

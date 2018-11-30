@@ -18,16 +18,32 @@ class RawDataDigester(object):
 
         self.data = defaultdict(list)
 
+        curr_timestamp = None
         for line in lines:
             line = eval(line.strip())
             topic = line['Topic']
+            if topic == 'watch':
+                curr_timestamp = line['TimeStamp']
 
-            message = line['Payload']
-            curr_timestamp = line['TimeStamp']
+            if curr_timestamp is not None:
+                break
 
-            message = {"timestamp": curr_timestamp, "message": message}
+        for line in lines:
+            try:
+                line = eval(line.strip())
+                topic = line['Topic']
 
-            self.data[topic].append(message)
+                message = line['Payload']
+
+                if topic == 'watch':
+                    curr_timestamp = line['TimeStamp']
+                    message = {"timestamp": curr_timestamp, "message": message}
+                else:
+                    message = {"timestamp": curr_timestamp, "message": message}
+
+                self.data[topic].append(message)
+            except SyntaxError:
+                continue
 
     def get_watch_data(self):
         return self.data['watch']
@@ -56,8 +72,9 @@ class RawDataDigester(object):
     def get_labels(self):
 
         for line in self.labels:
-            message = line.strip().split(" ", 3)
+            message = line.strip().split(" ", 2)
             curr_timestamp = message[0] + " " + message[1]
+            print message
             message = {"timestamp": curr_timestamp, "message": message[2]}
             self.data["labels"].append(message)
 

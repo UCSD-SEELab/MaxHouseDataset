@@ -9,8 +9,8 @@ def toDateTime(s):
     return dt
 
 def main():
-    clean_raw_data("../data/subject1_data/MQTT_Messages.txt", "../data/subject1_data/labels.txt", "subject1")
-    #clean_raw_data("../data/MQTT_Messages_subject2_11-15-18.txt", "subject2")
+    clean_raw_data("../data/subject2_data/MQTT_Messages.txt", "../data/subject2_data/labels.txt", "subject2")
+    clean_raw_data("../data/subject3_data/MQTT_Messages.txt", "../data/subject3_data/labels.txt", "subject3")
 
 def clean_raw_data(path, label_path, subject=""):
     raw_data = RawDataDigester(path, label_path)
@@ -41,7 +41,6 @@ def clean_raw_data(path, label_path, subject=""):
     for name, data in misc_smartthings_data.iteritems():
         data.to_hdf(out_path, name, **hdf_opts)
     
-
 def process_labels(raw_data):
     labels = raw_data.get_labels()
     data = {
