@@ -15,7 +15,6 @@
 *.model-*
 *model.ckpt*
 *.dat
-*data.txt
 *.local
 *.icloud
 *.mp4
