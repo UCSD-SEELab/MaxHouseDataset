@@ -22,9 +22,10 @@ class RawDataDigester(object):
             line = eval(line.strip())
             topic = line['Topic']
 
-
             message = line['Payload']
             curr_timestamp = line['TimeStamp']
+
+            message = {"timestamp": curr_timestamp, "message": message}
 
             self.data[topic].append(message)
 
@@ -35,7 +36,7 @@ class RawDataDigester(object):
         return self.data['pir/raw/1'], self.data['pir/raw/2']
 
     def get_plugs_data(self):
-        return self.data['plug1'], self.data['plug2'], self.data['plug3'], self.data["tv_plug"], self.data["teapot_plug"]
+        return self.data['plug1'], self.data['plug2'], self.data['plug3']
 
     def get_ble_data(self):
         return self.data['rssi1'], self.data['rssi2'], self.data['rssi3']
@@ -52,12 +53,12 @@ class RawDataDigester(object):
     def list_topics(self):
         return self.data.keys()
 
-    def read_labels(self):
+    def get_labels(self):
 
         for line in self.labels:
             message = line.strip().split(" ", 3)
-            curr_timestamp = toDateTime(message[0] + " " + message[1])
-            message = {"timestamp": curr_timestamp, "message": message[3]}
+            curr_timestamp = message[0] + " " + message[1]
+            message = {"timestamp": curr_timestamp, "message": message[2]}
             self.data["labels"].append(message)
 
         return self.data["labels"]
@@ -67,4 +68,6 @@ if __name__ == '__main__':
     labels_file = "../data/subject1_data/labels.txt"
 
     p = RawDataDigester(data_file, labels_file)
-    print p.read_labels()
+
+    print p.list_topics()
+

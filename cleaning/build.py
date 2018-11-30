@@ -15,11 +15,12 @@ def main():
     use_wavelets = False
 
     subject1_data, sensors = build_data(
-        "../../temp/subject1_data.h5", 30, "subject1", 
+        "../temp/subject1_data.h5", 30, "subject1", 
         use_wavelets, exclude_sensors=exclude_sensors, write_dists="train", 
         exclude_transitions=True)
+
     subject2_data, _ = build_data(
-        "../../temp/subject2_data.h5", 30, "subject2", 
+        "../temp/subject1_data.h5", 30, "subject2", 
         use_wavelets, exclude_sensors=exclude_sensors, 
         exclude_transitions=False)
 
@@ -46,11 +47,11 @@ def main():
     print subject2_data.mean()
     print subject2_data.var()
 
-    subject1_data.describe().to_csv("../../temp/subject1_stats.csv")
-    subject2_data.describe().to_csv("../../temp/subject2_stats.csv")
+    subject1_data.describe().to_csv("../temp/subject1_stats.csv")
+    subject2_data.describe().to_csv("../temp/subject2_stats.csv")
 
-    subject1_data.to_hdf("../../temp/data_processed.h5", "subject1")
-    subject2_data.to_hdf("../../temp/data_processed.h5", "subject2")
+    subject1_data.to_hdf("../temp/data_processed.h5", "subject1")
+    subject2_data.to_hdf("../temp/data_processed.h5", "subject2")
 
     return subject1_data, subject2_data, sensors
 
@@ -62,10 +63,6 @@ def build_data(path, window_size, subject, use_wavelets,
     labels = pd.read_hdf(path, "labels")
     tv_plug = pd.read_hdf(path, "tv_plug")
     teapot_plug = pd.read_hdf(path, "teapot_plug")
-    pressuremat = pd.read_hdf(path, "pressuremat")
-    metasense = pd.read_hdf(path, "metasense")
-    airbeam = pd.read_hdf(path, "airbeam")
-    location = pd.read_hdf(path, "location")
         
     '''
     dining_room_motion = pd.read_hdf(path, "dining_room_motion")
@@ -74,10 +71,12 @@ def build_data(path, window_size, subject, use_wavelets,
     corridor_motion = pd.read_hdf(path, "corridor_motion")
     '''
 
-    cabinet1_contact = pd.read_hdf(path, "cabinet1_contact")
-    cabinet2_contact = pd.read_hdf(path, "cabinet2_contact")
     drawer1_contact = pd.read_hdf(path, "drawer1_contact")
     drawer2_contact = pd.read_hdf(path, "drawer2_contact")
+    drawer3_contact = pd.read_hdf(path, "drawer3_contact")
+    drawer4_contact = pd.read_hdf(path, "drawer4_contact")
+    drawer5_contact = pd.read_hdf(path, "drawer5_contact")
+    drawer6_contact = pd.read_hdf(path, "drawer6_contact")
     fridge_contact = pd.read_hdf(path, "fridge_contact")
 
     #dining_room_motion = pd.read_hdf(
@@ -87,55 +86,52 @@ def build_data(path, window_size, subject, use_wavelets,
 
     watch_coarse = process_watch(watch, window_size, use_wavelets)
     labels_coarse = process_labels(watch, labels, window_size, exclude_transitions)
-    location_coarse = process_location_data(watch, location, window_size)
-    metasense = preprocess_metasense(metasense)
-    metasense_coarse = coarsen_continuous_features(metasense, watch, 3)
     tv_plug_coarse = coarsen_continuous_features(
         tv_plug["current"].to_frame(), watch, 3)
     teapot_plug_coarse = coarsen_continuous_features(
         teapot_plug["current"].to_frame(), watch, 3)
-    pressuremat_coarse = coarsen_continuous_features(
-        pressuremat, watch, 3)
-    airbeam_coarse = coarsen_continuous_features(
-        airbeam, watch, 3)
 
 
-    cabinet1_coarse = process_binary_features(
-        cabinet1_contact, watch, "cabinet1", window_size)
-
-    cabinet1_coarse = process_binary_features(
-        cabinet1_contact, watch, "cabinet1", window_size)
-    cabinet2_coarse = process_binary_features(
-        cabinet2_contact, watch, "cabinet2", window_size)
     drawer1_coarse = process_binary_features(
         drawer1_contact, watch, "drawer1", window_size)
+
     drawer2_coarse = process_binary_features(
         drawer2_contact, watch, "drawer2", window_size)
+
+    drawer3_coarse = process_binary_features(
+        drawer3_contact, watch, "drawer3", window_size)
+
+    drawer4_coarse = process_binary_features(
+        drawer4_contact, watch, "drawer4", window_size)
+
+    drawer5_coarse = process_binary_features(
+        drawer5_contact, watch, "drawer5", window_size)
+
+    drawer6_coarse = process_binary_features(
+        drawer6_contact, watch, "drawer6", window_size)
+    
     fridge_coarse = process_binary_features(
         fridge_contact, watch, "fridge", window_size)
 
     all_sensors = collections.OrderedDict([
                     # kitchen
                    ("teapot_plug", teapot_plug_coarse), 
-                   ("pressuremat", pressuremat_coarse), 
-                   ("metasense", metasense_coarse),
 
                    # smartthings
-                   ("cabinet1", cabinet1_coarse),
-                   ("cabinet2", cabinet2_coarse),
-                   ("drawer1", drawer1_coarse),  
-                   ("drawer2", drawer2_coarse), 
+                   ("drawer1", drawer1_coarse),
+                   ("drawer2", drawer2_coarse),
+                   ("drawer3", drawer3_coarse),
+                   ("drawer4", drawer4_coarse),
+                   ("drawer5", drawer5_coarse),
+                   ("drawer6", drawer6_coarse),
                    ("fridge", fridge_coarse),
  
                    #living room: 
                    ("tv_plug", tv_plug_coarse), 
 
                    # smart watch
-                   ("location", location_coarse), 
                    ("watch", watch_coarse),
 
-                   # not used
-                   ("airbeam", airbeam_coarse),
                    ])
 
     exclude_sensors = [] if exclude_sensors is None else exclude_sensors
@@ -143,7 +139,7 @@ def build_data(path, window_size, subject, use_wavelets,
     for sensor in all_sensors:
         if sensor in exclude_sensors:
             continue
-        if sensor in ['tv_plug', "teapot_plug", "metasense", "airbeam"]:
+        if sensor in ['tv_plug', "teapot_plug"]:
             rsuffix = "_{}".format(sensor)
         else:
             rsuffix = ""
@@ -173,6 +169,7 @@ def process_labels(watch, labels, window_size, exclude_transitions=False):
     both = watch.loc[:,"step"].to_frame().join(
             labels, how="left"
         ).drop("step", axis="columns").fillna(method="ffill")
+
     assert obs_before == both.shape[0], "Merge Error"
 
     both = both.dropna()
@@ -201,33 +198,6 @@ def process_labels(watch, labels, window_size, exclude_transitions=False):
         "timestamp")
 
     return labels_coarse
-
-
-def process_location_data(watch, location, window_size):
-    location = location.replace(0, -99999)
-    location["kitchen"] = location.loc[:,["kitchen2_crk","kitchen1_crk"]].max(axis="columns")
-    location["living_room"] = location.loc[:,["living_room1_crk","living_room2_crk"]].max(axis="columns")
-    location = location.loc[:,["kitchen", "living_room", "dining_room_crk"]]
-    location["closest"] = location.apply(
-        lambda x: np.argmax(x.values), axis="columns")
-    location = location.groupby(level=0)["closest"].first().to_frame()
-
-    obs_before = watch.shape[0]
-    both = watch.loc[:,"step"].to_frame().join(
-            location, how="left"
-        ).drop("step", axis="columns").fillna(method="ffill")
-    assert obs_before == both.shape[0], "Merge Error"
-
-    location_coarse = both.rolling(window_size).mean().dropna()
-    location_coarse["closest"] = location_coarse["closest"].round()
-
-    location_coarse["in_kitchen"] = location_coarse["closest"] == 0
-    location_coarse["in_living_room"] = location_coarse["closest"] == 1
-    location_coarse["in_dining_room"] = location_coarse["closest"] == 2
-
-    varnames = ["in_kitchen","in_living_room","in_dining_room"]
-    return location_coarse.loc[:,varnames]
-
 
 def process_watch(watch, window_size, use_wavelet_transform=False):
     print use_wavelet_transform
@@ -326,17 +296,6 @@ def compute_energy(data, window_size, stub):
     clean_data.columns = map(lambda x: "{}{}".format(x, stub), clean_data.columns)
     return clean_data
 
-
-def preprocess_metasense(data):
-    # Rescale everything to deviations from mean over the first 30 readings
-    chunk = data.head(30)
-
-    varnames = ["CO2", "temperature", "pressure", "humidity"]
-    for var in varnames:
-        data[var] = data[var] - chunk[var].mean()
-    return data
-
-
 def coarsen_continuous_features(data, watch, window_size, fill_method="ffill"):
     data_grouped = data.groupby(level=0).mean().sort_index()
     data_coarsened = data_grouped.rolling(
@@ -348,7 +307,6 @@ def coarsen_continuous_features(data, watch, window_size, fill_method="ffill"):
             data_coarsened, how="left"
         ).drop("step", axis="columns").fillna(method=fill_method).dropna()
     return both
-
 
 def process_binary_features(contact, watch, varname, window_size):
     contact = contact.groupby(level=0).first()
